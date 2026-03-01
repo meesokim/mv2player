@@ -316,22 +316,16 @@ function setupDrop() {
 				const displayH = Math.max(1, Math.floor(canvas.clientHeight || Math.floor(displayW * h / w)));
 
 				try {
-					if (displayW === w && displayH === h) {
-						canvas.width = w;
-						canvas.height = h;
-						const ctx = canvas.getContext('2d');
-						ctx.putImageData(imgData, 0, 0);
-					} else {
-						// set canvas to display size and draw scaled ImageBitmap
-						canvas.width = displayW;
-						canvas.height = displayH;
-						const ctx = canvas.getContext('2d');
-						// createImageBitmap is async and may be optimized by the browser
-						const bmp = await createImageBitmap(imgData);
-						ctx.imageSmoothingEnabled = false;
-						ctx.drawImage(bmp, 0, 0, displayW, displayH);
-						try { bmp.close(); } catch(_) {}
-					}
+					// keep internal canvas resolution equal to source to avoid cropping
+					canvas.width = w;
+					canvas.height = h;
+					const ctx = canvas.getContext('2d');
+					// use createImageBitmap for async/optimized upload then draw at source size;
+					// CSS will scale the canvas to the desired displayed size set earlier.
+					const bmp = await createImageBitmap(imgData);
+					ctx.imageSmoothingEnabled = false;
+					ctx.drawImage(bmp, 0, 0, w, h);
+					try { bmp.close(); } catch(_) {}
 				} catch (e) { console.error('drawImage failed', e); }
 			}
 			window.__currentFrame = idx;
@@ -626,21 +620,25 @@ function setupDrop() {
 				const container = document.getElementById('player-area');
 				if (canvas) {
 					function adjustCanvasScale(srcW, srcH) {
-						const viewW = window.innerWidth || (container ? container.clientWidth : 800);
-						const viewH = window.innerHeight || (container ? container.clientHeight : 600);
-						const DESIRED_AR = 4 / 3;
-						// compute max scale so that either applied width == viewW or applied height == viewH
-						const scaleW = viewW / srcW;
-						const scaleH = (viewH * DESIRED_AR) / srcW;
-						let scale = Math.min(scaleW, scaleH);
-						scale = Math.max(1, Math.min(scale, 6));
+						// Use the player-area container to determine available space so the canvas
+						// never exceeds the visible area and does not get clipped vertically.
+						const viewW = (container && container.clientWidth) || window.innerWidth || 800;
+						const viewH = (container && container.clientHeight) || window.innerHeight || 600;
+						// compute scale that fits both width and height (allow downscaling < 1)
+						let scale = Math.min(viewW / srcW, viewH / srcH);
+						// clamp scale to reasonable bounds (allow downscale to 0.25x)
+						scale = Math.max(0.25, Math.min(scale, 6));
 						const appliedW = Math.floor(srcW * scale);
-						const appliedH = Math.floor(appliedW / DESIRED_AR);
+						const appliedH = Math.floor(srcH * scale);
+						// set CSS size while keeping internal canvas resolution equal to source
 						canvas.style.width = appliedW + 'px';
 						canvas.style.height = appliedH + 'px';
+						// ensure CSS won't allow the canvas to overflow the container
+						canvas.style.maxWidth = '100%';
+						canvas.style.maxHeight = '100%';
 						try { canvas.dataset.scaledWidth = canvas.style.width; canvas.dataset.scaledHeight = canvas.style.height; } catch(e) {}
 						try { updateControlsWidth(); } catch(e) {}
-						dbg('canvas scaled to viewport (forced 4:3)', { scale, appliedW, appliedH });
+						dbg('canvas scaled to viewport (fit both dims)', { scale, appliedW, appliedH, viewW, viewH });
 					}
 
 					adjustCanvasScale(w, h);

@@ -1,5 +1,7 @@
 #app { width: 900px; max-width: 95%; }
-body { font-family: Arial, sans-serif; background: #111; color: #eee; margin:0; min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding-top:0; }
+html, body { height: 100%; }
+body { font-family: Arial, sans-serif; background: #111; color: #eee; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+#app { width: 900px; max-width: 95%; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
 #player-area { position: relative; background: #000; display:flex; align-items:center; justify-content:center; overflow:hidden; margin:0; padding:0; height:75vh; }
 canvas { display:block; background:#000; }
 .canvas-wrapper { position:relative; }
@@ -15,7 +17,7 @@ canvas { display:block; background:#000; }
 /* If JS forces controls hidden due to inactivity, ensure they stay hidden and do not intercept pointer events */
 #player-area.controls-hidden { pointer-events: auto; }
 #player-area.controls-hidden #controls { opacity:0 !important; pointer-events: none !important; }
-#dropzone { margin-top:12px; padding:20px; border:2px dashed #444; text-align:center; color:#888; border-radius:6px; }
+#dropzone { margin-top:0; padding:20px; border:2px dashed #444; text-align:center; color:#888; border-radius:6px; }
 #dropzone.active { border-color:#9cf; color:#9cf; }
 /* Title overlay shown above the video; positioned absolutely inside #player-area */
 #title {
