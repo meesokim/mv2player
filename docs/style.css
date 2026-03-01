@@ -1,0 +1,139 @@
+#app { width: 900px; max-width: 95%; }
+body { font-family: Arial, sans-serif; background: #111; color: #eee; margin:0; min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding-top:0; }
+#player-area { position: relative; background: #000; display:flex; align-items:center; justify-content:center; overflow:hidden; margin:0; padding:0; height:75vh; }
+canvas { display:block; background:#000; }
+.canvas-wrapper { position:relative; }
+.overlay { position:absolute; left:10px; top:10px; background: rgba(0,0,0,0.6); padding:8px 12px; border-radius:4px; }
+.hidden { display:none; }
+#controls { position:absolute; left:50%; transform:translateX(-50%); bottom:0; background: rgba(0,0,0,0.6); padding:8px 12px; border-radius:6px; display:flex; gap:8px; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 180ms ease; z-index:20; font-size:0.9rem; }
+/* Show controls when player-area has controls-enabled OR when hovering */
+#player-area.controls-enabled #controls,
+#player-area:hover #controls { opacity:1; pointer-events:auto; }
+#player-area canvas { position:relative; z-index:10; }
+/* When showing controls, allow pointer events to reach controls instead of canvas */
+#player-area:hover canvas { pointer-events: none; }
+/* If JS forces controls hidden due to inactivity, ensure they stay hidden and do not intercept pointer events */
+#player-area.controls-hidden { pointer-events: auto; }
+#player-area.controls-hidden #controls { opacity:0 !important; pointer-events: none !important; }
+#dropzone { margin-top:12px; padding:20px; border:2px dashed #444; text-align:center; color:#888; border-radius:6px; }
+#dropzone.active { border-color:#9cf; color:#9cf; }
+/* Title overlay shown above the video; positioned absolutely inside #player-area */
+#title {
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	top: 8px;
+	z-index: 99999;
+	background: rgba(0,0,0,0.85);
+	padding: 6px 10px;
+	border-radius: 6px;
+	font-weight: 600;
+	color: #fff;
+	font-size: 18px;
+	pointer-events: none;
+	display: none;
+	opacity: 0;
+	transition: opacity 150ms ease;
+	cursor: none;
+	caret-color: transparent;
+}
+
+/* Title visibility follows controls visibility (or explicit temporary title-visible state) */
+#player-area.controls-enabled #title,
+#player-area:hover #title,
+#player-area.title-visible #title {
+	display: block; opacity: 1;
+	cursor: none !important;
+	caret-color: transparent !important;
+}
+
+/* When in fullscreen and title is visible, disable cursor and caret blinking */
+#player-area.fullscreen.title-visible,
+#player-area.fullscreen.title-visible * {
+	cursor: default !important;
+	caret-color: transparent !important;
+	-webkit-user-select: none;
+	user-select: none;
+	outline: none !important;
+}
+
+/* Fullscreen toggle positioned top-left (viewport) */
+/* fullscreen buttons overlaid directly on the video (inside #player-area) */
+#fullscreen { position:absolute; right:10px; top:10px; z-index:1200; background:transparent; border:none; color:#fff; font-size:20px; cursor:pointer; display:block; opacity:0; pointer-events:none; transition:opacity 180ms ease; }
+#player-area .fs-exit, #fsExit { position:absolute; right:10px; top:10px; z-index:1250; width:40px; height:40px; border-radius:50%; background:rgba(0,0,0,0.6); color:#fff; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.08); cursor:pointer; opacity:0; pointer-events:none; transition:opacity 180ms ease; }
+
+/* Show fullscreen/exit when controls are visible (hover or JS-enabled) */
+#player-area.controls-enabled #fullscreen,
+#player-area.controls-enabled #fsExit,
+#player-area:hover #fullscreen,
+#player-area:hover #fsExit {
+	opacity: 1; pointer-events: auto;
+}
+
+/* Hide fullscreen toggle button while in fullscreen to avoid overlap with exit button */
+#player-area.fullscreen #fullscreen {
+	display: none !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+/* When JS marks controls-hidden, ensure title and fullscreen controls are hidden too */
+#player-area.controls-hidden #title,
+#player-area.controls-hidden #fullscreen,
+#player-area.controls-hidden #fsExit {
+	display: none !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+/* Centered loading overlay shown when file open stalls */
+#loading { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:1400; color:#fff; background: rgba(0,0,0,0.75); padding:10px 16px; border-radius:8px; display:none; font-size:18px; }
+#player-area.loading #loading { display:block; }
+
+/* Fullscreen container styling */
+#player-area.fullscreen { position:fixed; left:0; top:0; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; z-index:1000; }
+#player-area.fullscreen canvas { max-width:100%; max-height:100%; }
+
+/* Speed select styling */
+#speedSelect { background: rgba(255,255,255,0.06); color:#fff; border:1px solid rgba(255,255,255,0.06); padding:4px 6px; border-radius:4px; }
+/* When controls are visible (hover or JS-enabled), make the combobox background black for contrast */
+#player-area.controls-enabled #speedSelect,
+#player-area:hover #speedSelect,
+#speedSelect:focus,
+#speedSelect:active {
+	background: #000;
+	color: #fff;
+	border-color: rgba(255,255,255,0.08);
+}
+
+/* Scanlines overlay: subtle horizontal lines over the canvas */
+#player-area.scanlines::after {
+	content: "";
+	position: absolute;
+	left: 0; top: 0; right: 0; bottom: 0;
+	pointer-events: none;
+	background-image: linear-gradient(rgba(0,0,0,0.18) 50%, rgba(0,0,0,0) 50%);
+	background-size: 100% 2px;
+	mix-blend-mode: multiply;
+	z-index: 1150;
+}
+
+/* Icon button styling - circular */
+
+.icon-btn { width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); display:inline-flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; padding:6px; }
+.icon-btn svg { display:block; }
+
+/* Controls width will be set by JS to 90% of the displayed canvas width; provide sensible defaults */
+#controls { max-width: 90%; box-sizing: border-box; }
+
+/* Keep cursor visible when interacting with controls or when controls have focus */
+#controls:focus-within, #controls *:focus, .icon-btn:active, .icon-btn:focus {
+	cursor: auto !important;
+}
+
+/* Keep cursor visible when hovering or focusing the play button */
+#play, #play * { cursor: pointer !important; }
+#play:hover { cursor: pointer !important; }
+
+/* Make the volume slider visually smaller (~2/3 width of control area) */
+#volume { width: 66%; max-width: 160px; }
