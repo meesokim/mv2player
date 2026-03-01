@@ -31,6 +31,26 @@ if (typeof Module !== 'undefined') {
 		}
 	} catch (e) {
 		console.warn('Module.onRuntimeInitialized assignment failed, falling back', e);
+
+	// Shared helper to compute and apply CSS canvas scaling to preserve aspect ratio
+	function adjustCanvasScale(srcW, srcH) {
+		try {
+			const container = document.getElementById('player-area');
+			const viewW = (container && container.clientWidth) || window.innerWidth || 800;
+			const viewH = (container && container.clientHeight) || window.innerHeight || 600;
+			let scale = Math.min(viewW / srcW, viewH / srcH);
+			scale = Math.max(0.25, Math.min(scale, 6));
+			const appliedW = Math.floor(srcW * scale);
+			const appliedH = Math.floor(srcH * scale);
+			canvas.style.width = appliedW + 'px';
+			canvas.style.height = appliedH + 'px';
+			canvas.style.maxWidth = '100%';
+			canvas.style.maxHeight = '100%';
+			try { canvas.dataset.scaledWidth = canvas.style.width; canvas.dataset.scaledHeight = canvas.style.height; } catch(e) {}
+			try { updateControlsWidth(); } catch(e) {}
+			dbg('adjustCanvasScale applied', { scale, appliedW, appliedH, viewW, viewH });
+		} catch (e) { dbgWarn('adjustCanvasScale failed', e); }
+	}
 		document.addEventListener('DOMContentLoaded', initUI);
 	}
 } else {
