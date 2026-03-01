@@ -3,8 +3,9 @@ html, body { height: 100%; }
 body { font-family: Arial, sans-serif; background: #111; color: #eee; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; }
 #app { width: 900px; max-width: 95%; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
 #player-area { position: relative; background: #000; display:flex; align-items:center; justify-content:center; overflow:hidden; margin:0; padding:0; height:75vh; }
-canvas { display:block; background:#000; }
-.canvas-wrapper { position:relative; }
+.canvas-wrapper { position:relative; display:inline-block; width:auto; }
+/* Ensure canvas fills the wrapper; wrapper enforces aspect ratio */
+canvas { display:block; width:100%; height:100%; background:#000; }
 .overlay { position:absolute; left:10px; top:10px; background: rgba(0,0,0,0.6); padding:8px 12px; border-radius:4px; }
 .hidden { display:none; }
 #controls { position:absolute; left:50%; transform:translateX(-50%); bottom:0; background: rgba(0,0,0,0.6); padding:8px 12px; border-radius:6px; display:flex; gap:8px; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 180ms ease; z-index:20; font-size:0.9rem; }

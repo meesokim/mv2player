@@ -9,7 +9,9 @@
 <body>
   <div id="app">
     <div id="player-area">
-      <canvas id="canvas"></canvas>
+      <div class="canvas-wrapper">
+        <canvas id="canvas"></canvas>
+      </div>
       <div id="loading">Loading...</div>
       <div id="title">MV2 Player</div>
       <div id="controls">
@@ -36,7 +38,19 @@
     </div>
     <div id="dropzone">Drop .mv2 or .zip here</div>
   </div>
-  <script src="mv2player.js"></script>
-  <script src="app.js"></script>
+  <script>
+    // Development-friendly cache-busting loader:
+    // - If URL contains ?cachebust=VALUE that value is used (useful for reproducible tests)
+    // - Otherwise a timestamp is used to force fresh fetches while developing
+    (function(){
+      try {
+        const params = new URLSearchParams(location.search);
+        const vb = params.get('cachebust') || Date.now();
+        const head = document.getElementsByTagName('head')[0] || document.documentElement;
+        const s1 = document.createElement('script'); s1.src = 'mv2player.js?v=' + vb; s1.defer = false; head.appendChild(s1);
+        const s2 = document.createElement('script'); s2.src = 'app.js?v=' + vb; s2.defer = false; head.appendChild(s2);
+      } catch(e) { console.error('cache-bust loader failed', e); }
+    })();
+  </script>
 </body>
 </html>

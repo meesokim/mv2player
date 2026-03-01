@@ -33,22 +33,29 @@ if (typeof Module !== 'undefined') {
 		console.warn('Module.onRuntimeInitialized assignment failed, falling back', e);
 
 	// Shared helper to compute and apply CSS canvas scaling to preserve aspect ratio
-	function adjustCanvasScale(srcW, srcH) {
+	// If `useWindow` is true, use `window.innerWidth/innerHeight` instead of container client sizes.
+	function adjustCanvasScale(srcW, srcH, useWindow = false) {
 		try {
+			const wrapperEl = document.querySelector('.canvas-wrapper') || document.getElementById('canvas');
 			const container = document.getElementById('player-area');
-			const viewW = (container && container.clientWidth) || window.innerWidth || 800;
-			const viewH = (container && container.clientHeight) || window.innerHeight || 600;
+			const viewW = useWindow ? window.innerWidth : ((container && container.clientWidth) || window.innerWidth);
+			const viewH = useWindow ? window.innerHeight : ((container && container.clientHeight) || window.innerHeight);
 			let scale = Math.min(viewW / srcW, viewH / srcH);
+			// allow downscaling but clamp to reasonable bounds
 			scale = Math.max(0.25, Math.min(scale, 6));
 			const appliedW = Math.floor(srcW * scale);
 			const appliedH = Math.floor(srcH * scale);
-			canvas.style.width = appliedW + 'px';
-			canvas.style.height = appliedH + 'px';
-			canvas.style.maxWidth = '100%';
-			canvas.style.maxHeight = '100%';
-			try { canvas.dataset.scaledWidth = canvas.style.width; canvas.dataset.scaledHeight = canvas.style.height; } catch(e) {}
+			// clear any previous max constraints then apply exact CSS size on wrapper
+			wrapperEl.style.maxWidth = '';
+			wrapperEl.style.maxHeight = '';
+			wrapperEl.style.width = appliedW + 'px';
+			wrapperEl.style.height = appliedH + 'px';
+			// ensure CSS won't allow overflow
+			wrapperEl.style.maxWidth = '100%';
+			wrapperEl.style.maxHeight = '100%';
+			try { wrapperEl.dataset.scaledWidth = wrapperEl.style.width; wrapperEl.dataset.scaledHeight = wrapperEl.style.height; } catch(e) {}
 			try { updateControlsWidth(); } catch(e) {}
-			dbg('adjustCanvasScale applied', { scale, appliedW, appliedH, viewW, viewH });
+			dbg('adjustCanvasScale applied', { scale, appliedW, appliedH, viewW, viewH, useWindow });
 		} catch (e) { dbgWarn('adjustCanvasScale failed', e); }
 	}
 		document.addEventListener('DOMContentLoaded', initUI);
@@ -639,28 +646,7 @@ function setupDrop() {
 			try {
 				const container = document.getElementById('player-area');
 				if (canvas) {
-					function adjustCanvasScale(srcW, srcH) {
-						// Use the player-area container to determine available space so the canvas
-						// never exceeds the visible area and does not get clipped vertically.
-						const viewW = (container && container.clientWidth) || window.innerWidth || 800;
-						const viewH = (container && container.clientHeight) || window.innerHeight || 600;
-						// compute scale that fits both width and height (allow downscaling < 1)
-						let scale = Math.min(viewW / srcW, viewH / srcH);
-						// clamp scale to reasonable bounds (allow downscale to 0.25x)
-						scale = Math.max(0.25, Math.min(scale, 6));
-						const appliedW = Math.floor(srcW * scale);
-						const appliedH = Math.floor(srcH * scale);
-						// set CSS size while keeping internal canvas resolution equal to source
-						canvas.style.width = appliedW + 'px';
-						canvas.style.height = appliedH + 'px';
-						// ensure CSS won't allow the canvas to overflow the container
-						canvas.style.maxWidth = '100%';
-						canvas.style.maxHeight = '100%';
-						try { canvas.dataset.scaledWidth = canvas.style.width; canvas.dataset.scaledHeight = canvas.style.height; } catch(e) {}
-						try { updateControlsWidth(); } catch(e) {}
-						dbg('canvas scaled to viewport (fit both dims)', { scale, appliedW, appliedH, viewW, viewH });
-					}
-
+					// use the shared adjustCanvasScale helper (top-level) to size wrapper
 					adjustCanvasScale(w, h);
 					// update on window resize to keep either width or height matched
 					try {
@@ -837,16 +823,17 @@ function setupDrop() {
 					try { triggerFileInput(); return; } catch(e){}
 				}
 				// otherwise: on mobile (or any device) if the visible canvas is taller than wide
-				// prefer to scale the canvas to match the container width. If the visible
+				// prefer to scale the canvas-wrapper to match the container width. If the visible
 				// canvas is wider than tall, perform the usual play/pause toggle.
 				const canvasEl = document.getElementById('canvas');
+				const wrapperEl = document.querySelector('.canvas-wrapper') || canvasEl;
 				if (canvasEl) {
 					try {
 						const crect = canvasEl.getBoundingClientRect();
 						if (crect.height > crect.width) {
-							// scale to fit width
-							try { canvasEl.style.width = '100%'; canvasEl.style.height = 'auto'; } catch(e){}
-							try { canvasEl.dataset.scaledWidth = canvasEl.style.width; canvasEl.dataset.scaledHeight = canvasEl.style.height || 'auto'; } catch(e){}
+							// scale wrapper to fit width
+							try { wrapperEl.style.width = '100%'; wrapperEl.style.height = 'auto'; } catch(e){}
+							try { canvasEl.dataset.scaledWidth = wrapperEl.style.width; canvasEl.dataset.scaledHeight = wrapperEl.style.height || 'auto'; } catch(e){}
 							try { updateControlsWidth(); } catch(e){}
 							return;
 						}
@@ -891,23 +878,69 @@ function setupDrop() {
 		try {
 			if (canvasEl) {
 				if (isFS) {
+					// entering fullscreen: scale to fit viewport while preserving native aspect
 					const nativeW = window.__currentWidth || canvasEl.width || 256;
 					const nativeH = window.__currentHeight || canvasEl.height || 192;
 					const scale = Math.min(window.innerHeight / nativeH, window.innerWidth / nativeW);
+					canvasEl.style.width = Math.round(nativeW * scale) + 'px';
 					canvasEl.style.height = Math.round(nativeH * scale) + 'px';
-					canvasEl.style.width = 'auto';
 				} else {
-					// restore to previously computed scaled size (if available) outside fullscreen
+					// exiting fullscreen: recompute CSS scale to preserve 4:3 using helper
 					try {
-						if (canvasEl.dataset && canvasEl.dataset.scaledWidth) canvasEl.style.width = canvasEl.dataset.scaledWidth;
-						else canvasEl.style.width = '';
-						if (canvasEl.dataset && canvasEl.dataset.scaledHeight) canvasEl.style.height = canvasEl.dataset.scaledHeight;
-						else canvasEl.style.height = '';
-					} catch (e) { canvasEl.style.width = ''; canvasEl.style.height = ''; }
+						const applyScaleNow = () => {
+							try {
+								if (window.__currentWidth && window.__currentHeight) adjustCanvasScale(window.__currentWidth, window.__currentHeight, true);
+								else if (canvasEl.width && canvasEl.height) adjustCanvasScale(canvasEl.width, canvasEl.height, true);
+								void canvasEl.offsetWidth; // force reflow
+								requestAnimationFrame(() => { try { renderFrameIndex(window.__currentFrame || 0); } catch(e){} });
+							} catch(e) {}
+						};
+
+						// Apply immediately and schedule retries to handle browser exit animations/layout delays
+						applyScaleNow();
+						const retryIds = [];
+						retryIds.push(setTimeout(applyScaleNow, 120));
+						retryIds.push(setTimeout(applyScaleNow, 300));
+						// also apply on next resize event once
+						const onResize = () => { try { applyScaleNow(); } catch(e){} finally { window.removeEventListener('resize', onResize); retryIds.forEach(id => clearTimeout(id)); } };
+						window.addEventListener('resize', onResize);
+					} catch (e) {
+						canvasEl.style.width = canvasEl.dataset && canvasEl.dataset.scaledWidth ? canvasEl.dataset.scaledWidth : '';
+						canvasEl.style.height = canvasEl.dataset && canvasEl.dataset.scaledHeight ? canvasEl.dataset.scaledHeight : '';
+					}
 				}
 			}
 		} catch (e) { console.warn('fullscreen resize failed', e); }
 	});
+
+// Visibility change: pause/resume and attempt to resync audio/video when the page is backgrounded/foregrounded.
+try {
+    document.addEventListener('visibilitychange', () => {
+        try {
+            const fps = window.__currentFPS || 15;
+            if (document.hidden) {
+                // going to background: pause playback and audio to avoid drift
+                try { if (window.__currentAudio && !window.__currentAudio.paused) window.__currentAudio.pause(); } catch(e) {}
+                try { stopPlayback(); } catch(e) {}
+            } else {
+                // coming back to foreground: if audio present, compute frame from audio time and render, then resume
+                try {
+                    if (window.__currentAudio) {
+                        const audio = window.__currentAudio;
+                        const targetFrame = Math.floor((audio.currentTime || 0) * fps);
+                        try { renderFrameIndex(targetFrame); } catch(e) {}
+                        window.__currentFrame = targetFrame;
+                        try { audio.play().catch(() => {}); } catch(e) {}
+                        try { startPlayback(); } catch(e) {}
+                    } else {
+                        // no audio: just resume playback loop
+                        try { lastTick = performance.now(); startPlayback(); } catch(e) {}
+                    }
+                } catch(e) { console.warn('visibility resume failed', e); }
+            }
+        } catch(e) {}
+    });
+} catch(e) {}
 
 	const fileinput = document.getElementById('fileinput');
 	if (fileinput) {
