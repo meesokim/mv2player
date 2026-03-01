@@ -18,7 +18,7 @@
           <span id="play-text" style="display:none; margin-left:4px; font-weight:600;">⏸</span>
         </button>
         <input id="seek" type="range" min="0" max="100" value="0">
-        <span id="time">0:00 / 0:00</span>
+        <span id="time">0:00/ 0:00</span>
         <label>🔊 <input id="volume" type="range" min="0" max="1" step="0.01" value="1"></label>
         <label for="speedSelect">Speed</label>
         <select id="speedSelect">
@@ -28,13 +28,13 @@
           <option value="1.5">1.5x</option>
           <option value="2.0">2.0x</option>
         </select>
-        <button id="openfile" class="icon-btn" aria-label="Open Image/File">🎦</button>
-        <input id="fileinput" type="file" accept=".mv2,.zip" style="display:none" />
+        <label style="display:flex;align-items:center;gap:6px">Scanlines <input id="scanlinesToggle" type="checkbox" checked style="transform:scale(0.9);margin-left:6px"></label>
+        <input id="fileinput" type="file" accept=".zip, .mv2, application/zip, application/x-zip-compressed" style="display:none" />
       </div>
       <button id="fullscreen" aria-label="Toggle fullscreen">⤢</button>
       <button id="fsExit" class="fs-exit" style="display:none;" aria-label="Exit fullscreen">✕</button>
     </div>
-    <div id="dropzone">Drop .mv2 or .zip here, Click to open file</div>
+    <div id="dropzone">Drop .mv2 or .zip here</div>
   </div>
   <script src="mv2player.js"></script>
   <script src="app.js"></script>

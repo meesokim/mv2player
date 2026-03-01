@@ -106,14 +106,15 @@ canvas { display:block; background:#000; }
 	border-color: rgba(255,255,255,0.08);
 }
 
-/* Scanlines overlay: subtle horizontal lines over the canvas */
+/* Scanlines overlay: stronger, denser horizontal lines for CRT effect */
 #player-area.scanlines::after {
 	content: "";
 	position: absolute;
 	left: 0; top: 0; right: 0; bottom: 0;
 	pointer-events: none;
-	background-image: linear-gradient(rgba(0,0,0,0.18) 50%, rgba(0,0,0,0) 50%);
-	background-size: 100% 2px;
+	/* darker lines (alpha) and tighter spacing (1px) for increased intensity */
+	background-image: linear-gradient(rgba(0,0,0,0.45) 50%, rgba(0,0,0,0) 50%);
+	background-size: 100% 1px;
 	mix-blend-mode: multiply;
 	z-index: 1150;
 }
@@ -137,3 +138,20 @@ canvas { display:block; background:#000; }
 
 /* Make the volume slider visually smaller (~2/3 width of control area) */
 #volume { width: 66%; max-width: 160px; }
+
+/* Make drop-openfile look like a normal rectangular button (override icon-btn) */
+.drop-openfile {
+	border-radius: 6px !important;
+	width: auto !important;
+	height: auto !important;
+	min-height: 36px;
+	padding: 8px 12px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	background: rgba(255,255,255,0.06) !important;
+	border: 1px solid rgba(255,255,255,0.08) !important;
+	color: #fff !important;
+	font-weight: 600 !important;
+	gap: 8px;
+}
