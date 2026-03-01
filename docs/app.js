@@ -458,6 +458,18 @@ function setupDrop() {
 	drop.addEventListener('dragleave', e => { try { drop.classList.remove('hover'); } catch(e){} });
 	drop.addEventListener('drop', e => { processDropEvent(e); try { drop.classList.remove('hover'); } catch(e){} });
 
+	// clicking the dropzone should open the file picker
+	try {
+		drop.addEventListener('click', e => {
+			try {
+				e.preventDefault();
+				e.stopPropagation();
+				const input = document.getElementById('fileinput');
+				if (input) input.click();
+			} catch (err) { /* ignore */ }
+		});
+	} catch(e) { /* ignore */ }
+
 	// Also accept drops on the player area and on the canvas element itself
 	if (playerArea) {
 		playerArea.addEventListener('dragover', e => { processDragOver(e); try { playerArea.classList.add('hover'); } catch(e){} });
